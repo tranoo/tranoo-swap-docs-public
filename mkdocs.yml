@@ -1,0 +1,22 @@
+site_name: Tranoo Swap documentation
+site_url: https://docs.swap.tranoo.com/
+site_description: Tranoo Swap documentation
+site_author: Tranoo Team
+
+repo_url: https://github.com/tranoo/tranoo-swap-docs-public
+
+nav:
+- Home: index.md
+- User Guide:
+  - Tranoo Swap User Guide: user-guide.md
+- Roadmap:
+  - Tranoo Swap Roadmap: roadmap.md
+- About:
+  - About Tranoo Team: about.md
+
+copyright: License BSD3, Copyright &copy; 2025 Tranoo team
+theme: readthedocs
+
+markdown_extensions:
+  - toc:
+      permalink: true
