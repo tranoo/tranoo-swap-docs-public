@@ -14,6 +14,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import paramiko
 import tempfile
+import logging
 
 def load_environment():
     """Загрузка переменных окружения из .env файла"""
@@ -50,10 +51,14 @@ def build_docs():
         print("Документация успешно собрана.")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Ошибка при сборке документации: {e}")
+        print(f"Ошибка при сборке документации")
+        import traceback
+        traceback.print_exc()
         return False
     except FileNotFoundError:
         print("Ошибка: mkdocs не найден. Убедитесь, что mkdocs установлен.")
+        import traceback
+        traceback.print_exc()
         return False
 
 def clean_remote_directory(ssh_client, target_dir):
@@ -74,7 +79,9 @@ def clean_remote_directory(ssh_client, target_dir):
         
         return True
     except Exception as e:
-        print(f"Ошибка при очистке удаленной директории: {e}")
+        print(f"Ошибка при очистке удаленной директории")
+        import traceback
+        traceback.print_exc()
         return False
 
 def deploy_docs(config):
@@ -83,17 +90,40 @@ def deploy_docs(config):
     
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    root_ssh_client = paramiko.SSHClient()
+    root_ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     
     try:
         # Подключение к серверу
         ssh_client.connect(
             hostname=config['host'],
             username=config['user'],
-            password=config['password']
+            password=config['password'],
+            allow_agent=False, # disable ssh agent
+            look_for_keys=False # disable key auth
+        )
+        # Подключение к серверу
+        root_ssh_client.connect(
+            hostname=config['host'],
+            username='root',
+            password=config['root_password'],
+            allow_agent=False, # disable ssh agent
+            look_for_keys=False # disable key auth
         )
         
+        try:
+            stdin, stdout, stderr = root_ssh_client.exec_command(f"chown -v tranoo:tranoo {config['target_dir']}")
+            print(stdout.read().decode())
+            print(stderr.read().decode())
+        except Exception as e:
+            print(f"Ошибка при смене владельца папки документации")
+            import traceback
+            traceback.print_exc()
+            return False
+
         # Очистка удаленной директории
-        if not clean_remote_directory(ssh_client, config['target_dir']):
+        if not clean_remote_directory(root_ssh_client, config['target_dir']):
             return False
         
         # Создаем временный скрипт для SCP
@@ -101,7 +131,7 @@ def deploy_docs(config):
         with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
             temp_file_path = temp_file.name
             temp_file.write(f"""#!/usr/bin/expect -f
-spawn bash -c \"scp -r {cwd}/site/* {config['user']}@{config['host']}:{config['target_dir']}\"
+spawn bash -c \"scp -o PubKeyAuthentication=no -o PasswordAuthentication=yes -r {cwd}/site/* {config['user']}@{config['host']}:{config['target_dir']}\"
 set timeout -1
 expect "password:"
 send "{config['password']}\r"
@@ -123,38 +153,41 @@ expect eof
             print(f"Ошибка при копировании файлов: {result.stderr}")
             return False
         
-        root_ssh_client = paramiko.SSHClient()
-        root_ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        
         try:
-            # Подключение к серверу
-            root_ssh_client.connect(
-                hostname=config['host'],
-                username='root',
-                password=config['root_password']
-            )
-            
             stdin, stdout, stderr = root_ssh_client.exec_command(f"chown -Rv www-data:www-data {config['target_dir']}")
             print(stdout.read().decode())
             print(stderr.read().decode())
         except Exception as e:
             print(f"Ошибка при смене владельца папки документации: {e}")
             return False
-        finally:
-            root_ssh_client.close()
 
         print("Документация успешно развернута на удаленном сервере.")
         return True
         
     except Exception as e:
-        print(f"Ошибка при деплое документации: {e}")
+        print(f"Ошибка при деплое документации")
+        import traceback
+        traceback.print_exc()
         return False
     finally:
-        ssh_client.close()
+        try:
+            ssh_client.close()
+        except Exception as e:
+            print(f"Игнорирована ошибка при закрытии ssh сессии пользователя {config['user']}")
+            import traceback
+            traceback.print_exc()
+        try:
+            root_ssh_client.close()
+        except Exception as e:
+            print(f"Игнорирована ошибка при закрытии ssh сессии пользователя root")
+            import traceback
+            traceback.print_exc()
 
 def main():
     """Основная функция"""
     print("Запуск процесса деплоя документации...")
+    
+    logging.getLogger("paramiko").setLevel(logging.DEBUG)
     
     # Загрузка переменных окружения
     config = load_environment()

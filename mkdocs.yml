@@ -6,7 +6,7 @@ site_author: Tranoo Team
 repo_url: https://github.com/tranoo/tranoo-swap-docs-public
 
 nav:
-- Home: index.md
+- Docs Home: index.md
 - User Guide:
   - Tranoo Swap User Guide: user-guide.md
 - Roadmap:
@@ -14,7 +14,7 @@ nav:
 - About:
   - About Tranoo Team: about.md
 
-copyright: License BSD3, Copyright &copy; 2025 Tranoo team
+copyright: License BSD3, Copyright &copy; 2025 Tranoo team. All rights reserved.
 theme: readthedocs
 
 markdown_extensions:
