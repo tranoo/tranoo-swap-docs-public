@@ -23,7 +23,8 @@ def load_environment():
         'DOCS_HOST', 
         'DOCS_USER', 
         'DOCS_PASSWORD', 
-        'DOCS_TARGET_DIR'
+        'DOCS_TARGET_DIR',
+        'DOCS_ROOT_PASSWORD'
     ]
     
     missing_vars = [var for var in required_vars if not os.getenv(var)]
@@ -36,7 +37,8 @@ def load_environment():
         'host': os.getenv('DOCS_HOST'),
         'user': os.getenv('DOCS_USER'),
         'password': os.getenv('DOCS_PASSWORD'),
-        'target_dir': os.getenv('DOCS_TARGET_DIR')
+        'target_dir': os.getenv('DOCS_TARGET_DIR'),
+        'root_password': os.getenv('DOCS_ROOT_PASSWORD')
     }
 
 def build_docs():
@@ -95,10 +97,12 @@ def deploy_docs(config):
             return False
         
         # Создаем временный скрипт для SCP
+        cwd = os.getcwd() 
         with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
             temp_file_path = temp_file.name
             temp_file.write(f"""#!/usr/bin/expect -f
-spawn scp -r site/* {config['user']}@{config['host']}:{config['target_dir']}
+spawn bash -c \"scp -r {cwd}/site/* {config['user']}@{config['host']}:{config['target_dir']}\"
+set timeout -1
 expect "password:"
 send "{config['password']}\r"
 expect eof
@@ -113,10 +117,32 @@ expect eof
         # Удаляем временный файл
         os.unlink(temp_file_path)
         
+        print(result.stdout)
+        
         if result.returncode != 0:
             print(f"Ошибка при копировании файлов: {result.stderr}")
             return False
         
+        root_ssh_client = paramiko.SSHClient()
+        root_ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        try:
+            # Подключение к серверу
+            root_ssh_client.connect(
+                hostname=config['host'],
+                username='root',
+                password=config['root_password']
+            )
+            
+            stdin, stdout, stderr = root_ssh_client.exec_command(f"chown -Rv www-data:www-data {config['target_dir']}")
+            print(stdout.read().decode())
+            print(stderr.read().decode())
+        except Exception as e:
+            print(f"Ошибка при смене владельца папки документации: {e}")
+            return False
+        finally:
+            root_ssh_client.close()
+
         print("Документация успешно развернута на удаленном сервере.")
         return True
         
