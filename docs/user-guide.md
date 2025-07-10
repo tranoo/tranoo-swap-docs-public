@@ -27,7 +27,12 @@ I will process support requests as fast as I can.
 ## Data Privacy Policy
 ### Summary of how user data is handled and protected
 
-All data doesn't leave your device except for transactions that are sent to ChangeNOW.io API. See their privacy policies.
+All data doesn't leave your device except for:
+
+  1. Transactions that are sent to ChangeNOW.io API. See their privacy policies.
+  2. See Telegram privacy policies and <a href="https://github.com/Telegram-Mini-Apps/analytics/">Telegram Webapps Analytics</a> privacy policies.
+  
+We reserve the right to change this Data Privacy Policy without notice.
 
 ## Feedback and Suggestions
 ### Encouragement for users to provide feedback on their experience with the platform
