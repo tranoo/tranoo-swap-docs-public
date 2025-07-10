@@ -30,7 +30,7 @@ I will process support requests as fast as I can.
 All data doesn't leave your device except for:
 
   1. Transactions that are sent to ChangeNOW.io API. See their privacy policies.
-  2. See Telegram privacy policies and <a href="https://github.com/Telegram-Mini-Apps/analytics/">Telegram Webapps Analytics</a> privacy policies.
+  2. See <a href="https://telegram.org/">Telegram</a> privacy policies and <a href="https://github.com/Telegram-Mini-Apps/analytics/">Telegram Webapps Analytics</a> privacy policies.
   
 We reserve the right to change this Data Privacy Policy without notice.
 
